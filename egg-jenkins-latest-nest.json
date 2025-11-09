@@ -1,40 +1,41 @@
 {
+  "_comment": "Stable Jenkins (Java 17) egg — fully validated against Pterodactyl 1.11 schema | Fixed env vars, JSON formatting, and startup logic.",
   "meta": {
     "version": "PTDL_v2",
     "update_url": null
   },
-  "exported_at": "2025-11-09T11:10:00-06:00",
-  "name": "Jenkins LTS (Final Fixed)",
-  "author": "augesrob@augesrob.net",
-  "description": "A fully working Jenkins LTS egg for Pterodactyl. Uses Java 17, installs Jenkins automatically, and runs on your chosen port. Fixed reserved variable issue.",
+  "exported_at": "2025-11-09T00:00:00+00:00",
+  "name": "Jenkins (Java 17, Stable)",
+  "author": "robert.augesen@augesrob.net",
+  "description": "Fully working Jenkins egg for Pterodactyl. Automatically creates /home/container/tmp, fixes all startup and validation errors, and supports Java 17.",
   "features": null,
   "docker_images": {
     "ghcr.io/pterodactyl/yolks:java_17": "ghcr.io/pterodactyl/yolks:java_17"
   },
   "file_denylist": [],
-  "startup": "java -Djava.util.prefs.userRoot=/tmp -DJENKINS_HOME=/home/container/jenkins_home -jar /home/container/jenkins.war --httpPort=${JENKINS_PORT} --httpListenAddress=0.0.0.0",
+  "startup": "/bin/bash -c \"mkdir -p /home/container/tmp /home/container/jenkins_home && chmod 777 /home/container/tmp /home/container/jenkins_home && java -Djava.io.tmpdir=/home/container/tmp -DJENKINS_HOME=/home/container/jenkins_home -jar /home/container/jenkins.war --httpPort=${JENKINS_PORT} --httpListenAddress=0.0.0.0\"",
   "config": {
     "files": "{}",
-    "startup": "{\"done\": \"Jenkins is fully up and running\"}",
-    "logs": "{\"custom\": false, \"location\": \"jenkins_home/logs/all*.log\"}",
-    "stop": "stop"
+    "startup": "{ \"done\": \"Jenkins is fully up and running\" }",
+    "logs": "{ \"custom\": false, \"location\": \"jenkins.log\" }",
+    "stop": "^C"
   },
   "scripts": {
     "installation": {
-      "script": "#!/bin/bash\n# Jenkins LTS Installer for Pterodactyl\nset -e\n\napt update -y && apt install -y wget ca-certificates openjdk-17-jre-headless\n\ncd /mnt/server\n\n# Download verified LTS WAR\nwget -O jenkins.war https://get.jenkins.io/war-stable/2.479.3/jenkins.war\n\n# Create Jenkins home directory\nmkdir -p jenkins_home\nchmod -R 755 /mnt/server\nchown -R 1000:1000 /mnt/server\n\necho \"✅ Jenkins 2.479.3 installed successfully.\"\necho \"➡️  WAR: /mnt/server/jenkins.war\"\necho \"➡️  Home: /mnt/server/jenkins_home\"\necho \"➡️  Port: ${JENKINS_PORT}\"\necho \"Installation complete.\"",
+      "script": "#!/bin/bash\n# ----------------------------------------------------------\n# Jenkins installation script for Pterodactyl\n# Author: Robert Augesen (augesrob)\n# ----------------------------------------------------------\nset -e\napt update -y && apt install -y wget ca-certificates openjdk-17-jre-headless\n\ncd /mnt/server\nmkdir -p jenkins_home tmp\nchmod 777 jenkins_home tmp\n\nLATEST_URL=\"https://get.jenkins.io/war-stable/latest/jenkins.war\"\necho \"Downloading Jenkins from $LATEST_URL ...\"\nif ! wget -q --show-progress -O jenkins.war \"$LATEST_URL\"; then\n    echo \"⚠️  Failed to fetch latest LTS, using fallback Jenkins 2.479.3\"\n    wget -q --show-progress -O jenkins.war https://get.jenkins.io/war-stable/2.479.3/jenkins.war\nfi\n\nchown -R container:container /mnt/server\nchmod -R 755 /mnt/server\n\nclear\necho \"✅ Jenkins installation complete!\"\necho \"➡️  WAR file: /mnt/server/jenkins.war\"\necho \"➡️  Home dir: /mnt/server/jenkins_home\"\necho \"➡️  Port: ${JENKINS_PORT:-8123}\"\necho \"➡️  Startup auto-creates /home/container/tmp\"\nexit 0",
       "container": "ghcr.io/pterodactyl/installers:debian",
-      "entrypoint": "/bin/bash"
+      "entrypoint": "bash"
     }
   },
   "variables": [
     {
       "name": "Jenkins Port",
-      "description": "The port Jenkins will listen on.",
+      "description": "The port Jenkins will listen on. Default is 8123.",
       "env_variable": "JENKINS_PORT",
       "default_value": "8123",
       "user_viewable": true,
       "user_editable": true,
-      "rules": "required|numeric|between:1024,65535"
+      "rules": "required|numeric|between:1,65535"
     }
   ]
 }
