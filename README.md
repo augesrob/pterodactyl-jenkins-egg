@@ -32,7 +32,7 @@ Perfect for self-hosted CI/CD setups on Pterodactyl.
 
 ### 🐣 1. Import the Egg
 1. Go to **Admin → Nests → Import Egg**  
-2. Upload `jenkins-final.json` from this repo  
+2. Upload `egg-jenkins-latest-nest.json` from this repo  
 3. Assign to your preferred nest (category)
 
 ---
