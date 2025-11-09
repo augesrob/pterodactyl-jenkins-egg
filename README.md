@@ -101,10 +101,6 @@ This egg is provided as-is without warranty or liability.
 
 💬 Support
 
-For issues or enhancements, open an issue on GitHub or contact:
-📧 augesrob@augesrob.net
+For issues or enhancements, open an issue on GitHub
 
 
----
-
-Would you like me to **generate the full GitHub repository structure** (with `/egg/jenkins-final.json`, `/README.md`, and a `/screenshots/` placeholder) in a zip so you can upload it directly?
