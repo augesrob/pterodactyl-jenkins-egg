@@ -1,33 +1,40 @@
 {
-    "_comment": "DO NOT EDIT: FILE GENERATED AUTOMATICALLY BY PTERODACTYL PANEL - PTERODACTYL.IO",
-    "meta": {
-        "version": "PTDL_v2",
-        "update_url": null
-    },
-    "exported_at": "2022-12-01T15:12:12+01:00",
-    "name": "Jenkins Latest Nest",
-    "author": "muxxlenetzwerk@gmail.com",
-    "description": "Jenkins is a free and open source automation server written in Java. Jenkins helps to automate the non-human part of the software development process, with continuous integration and facilitating technical aspects of continuous delivery. It is a server-based system that runs in servlet containers such as Apache Tomcat. It supports version control tools, including AccuRev, CVS, Subversion, Git, Mercurial, Perforce, TD\/OMS, ClearCase and RTC, and can execute Apache Ant, Apache Maven and sbt based projects as well as arbitrary shell scripts and Windows batch commands. The creator of Jenkins is Kohsuke Kawaguchi.[4] Released under the MIT License, Jenkins is free software.\r\n\r\nBuilds can be triggered by various means, for example by commit in a version control system, by scheduling via a cron-like mechanism and by requesting a specific build URL. It can also be triggered after the other builds in the queue have completed. Jenkins functionality can be extended with plugins.",
-    "features": null,
-    "docker_images": {
-        "Jenkins LTS JDK11 [Jenkins JDK] ": "jenkins\/jenkins",
-        "Jenkins Java 8 [For older versions] ": " quay.io\\\/parkervcp\\\/pterodactyl-images:debian_openjdk-8-openj9",
-        "Jenkins Java 17 [HIGHLY RECOMMENDED] ": "ghcr.io\/software-noob\/pterodactyl-images:java_17_openj9"
-    },
-    "file_denylist": [],
-    "startup": "USED JENKINS VERSION: 2.375.1 LTS\r\n\r\nJenkins is a free and open source automation server written in Java. Jenkins helps to automate the non-human part of the software development process, with continuous integration and facilitating technical aspects of continuous delivery. It is a server-based system that runs in servlet containers such as Apache Tomcat. It supports version control tools, including AccuRev, CVS, Subversion, Git, Mercurial, Perforce, TD\/OMS, ClearCase and RTC, and can execute Apache Ant, Apache Maven and sbt based projects as well as arbitrary shell scripts and Windows batch commands. The creator of Jenkins is Kohsuke Kawaguchi.[4] Released under the MIT License, Jenkins is free software.\r\n\r\nBuilds can be triggered by various means, for example by commit in a version control system, by scheduling via a cron-like mechanism and by requesting a specific build URL. It can also be triggered after the other builds in the queue have completed. Jenkins functionality can be extended with plugins.",
-    "config": {
-        "files": "{\r\n    \"?\/.jenkins\/config.xml\": {\r\n        \"parser\": \"xml\",\r\n        \"find\": {}\r\n    }\r\n}",
-        "startup": "{\r\n    \"done\": \"Completed initialization\"\r\n}",
-        "logs": "{\r\n    \"custom\": false,\r\n    \"location\": \"jenkins.log\"\r\n}",
-        "stop": "^C"
-    },
-    "scripts": {
-        "installation": {
-            "script": "#!\/bin\/ash\r\n# Jenkins Installation Script\r\n#\r\n# Server Files: \/mnt\/server\r\napk update\r\napk add curl\r\n\r\ncd \/mnt\/server\r\n\r\ncurl -O jenkins.war \"https:\/\/updates.jenkins.io\/download\/war\/latest\/jenkins.war\"",
-            "container": "alpine:3.4",
-            "entrypoint": "ash"
-        }
-    },
-    "variables": []
+  "meta": {
+    "version": "PTDL_v2",
+    "update_url": null
+  },
+  "exported_at": "2025-11-09T11:10:00-06:00",
+  "name": "Jenkins LTS (Final Fixed)",
+  "author": "augesrob@augesrob.net",
+  "description": "A fully working Jenkins LTS egg for Pterodactyl. Uses Java 17, installs Jenkins automatically, and runs on your chosen port. Fixed reserved variable issue.",
+  "features": null,
+  "docker_images": {
+    "ghcr.io/pterodactyl/yolks:java_17": "ghcr.io/pterodactyl/yolks:java_17"
+  },
+  "file_denylist": [],
+  "startup": "java -Djava.util.prefs.userRoot=/tmp -DJENKINS_HOME=/home/container/jenkins_home -jar /home/container/jenkins.war --httpPort=${JENKINS_PORT} --httpListenAddress=0.0.0.0",
+  "config": {
+    "files": "{}",
+    "startup": "{\"done\": \"Jenkins is fully up and running\"}",
+    "logs": "{\"custom\": false, \"location\": \"jenkins_home/logs/all*.log\"}",
+    "stop": "stop"
+  },
+  "scripts": {
+    "installation": {
+      "script": "#!/bin/bash\n# Jenkins LTS Installer for Pterodactyl\nset -e\n\napt update -y && apt install -y wget ca-certificates openjdk-17-jre-headless\n\ncd /mnt/server\n\n# Download verified LTS WAR\nwget -O jenkins.war https://get.jenkins.io/war-stable/2.479.3/jenkins.war\n\n# Create Jenkins home directory\nmkdir -p jenkins_home\nchmod -R 755 /mnt/server\nchown -R 1000:1000 /mnt/server\n\necho \"✅ Jenkins 2.479.3 installed successfully.\"\necho \"➡️  WAR: /mnt/server/jenkins.war\"\necho \"➡️  Home: /mnt/server/jenkins_home\"\necho \"➡️  Port: ${JENKINS_PORT}\"\necho \"Installation complete.\"",
+      "container": "ghcr.io/pterodactyl/installers:debian",
+      "entrypoint": "/bin/bash"
+    }
+  },
+  "variables": [
+    {
+      "name": "Jenkins Port",
+      "description": "The port Jenkins will listen on.",
+      "env_variable": "JENKINS_PORT",
+      "default_value": "8123",
+      "user_viewable": true,
+      "user_editable": true,
+      "rules": "required|numeric|between:1024,65535"
+    }
+  ]
 }
