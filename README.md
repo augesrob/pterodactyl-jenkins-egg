@@ -1,126 +1,144 @@
-# 🧩 Jenkins Pterodactyl Egg
+# 🧩 Jenkins Pterodactyl Egg (Java 21 Stable LTS)
 
-This repository provides a ready-to-use **Pterodactyl Egg** for running **Jenkins LTS** (latest stable) inside an isolated Docker environment using the official `eclipse-temurin:17-jdk` image.
+A ready-to-use **Pterodactyl Egg** for running **Jenkins LTS 2.x+** inside an isolated Docker environment using  
+`ghcr.io/pterodactyl/yolks:java_21`.
+
+Maintained by **Robert Augesen (@augesrob)**.
+
+---
+
+## ⚡ Quick Install
+
+For users who prefer a one-line installation:
+```bash
+bash <(curl -s https://raw.githubusercontent.com/augesrob/ptero-jenkins/main/install.sh)
+```
 
 ---
 
 ## 📦 Overview
 
-Jenkins is a self-hosted automation server used for building, testing, and deploying code.  
-This egg installs Jenkins LTS automatically and configures it to run on your specified Pterodactyl port.
+Jenkins is a self-hosted automation server for building, testing, and deploying code.  
+This egg installs **Jenkins LTS on Java 21**, fixes permissions for `/home/container/tmp`, and auto-creates `jenkins_home`.
 
-The installer downloads the stable `jenkins.war`, installs **OpenJDK 17**, and configures it for 0.0.0.0 access to make it reachable from the panel.
+✔ Fully compatible with Pterodactyl 1.11.11+  
+✔ Automatic `tmp` and `jenkins_home` creation  
+✔ Works with Temurin Java 21 runtime
 
 ---
 
 ## ⚙️ Server Specifications
 
 | Setting | Recommended Value |
-|----------|------------------|
-| **Base Docker Image** | `eclipse-temurin:17-jdk` |
-| **Startup Command** | `java -Djava.util.prefs.userRoot=/tmp -jar jenkins.war --httpPort={{SERVER_PORT}} --httpListenAddress=0.0.0.0` |
-| **Installer Script Base Image** | `ghcr.io/pterodactyl/installers:debian` |
-| **Architecture** | `amd64` (x86_64) |
-| **Default Port** | `8123` |
-| **Environment Variable (SERVER_PORT)** | required, default = `8123` |
-| **Minimum Memory (RAM)** | 2 GB (recommended 4 GB for medium CI loads) |
-| **Storage Requirement** | ~2 GB (base install) + 10 GB for build workspace |
+|:--|:--|
+| **Base Docker Image** | `ghcr.io/pterodactyl/yolks:java_21` |
+| **Startup Command** | `/bin/bash -c "mkdir -p /home/container/tmp /home/container/jenkins_home && chmod 777 /home/container/tmp /home/container/jenkins_home && java -Djava.io.tmpdir=/home/container/tmp -DJENKINS_HOME=/home/container/jenkins_home -jar /home/container/jenkins.war --httpPort=${JENKINS_PORT} --httpListenAddress=0.0.0.0"` |
+| **Installer Base Image** | `ghcr.io/pterodactyl/installers:debian` |
+| **Default Port** | 8123 |
+| **Memory (RAM)** | 2 GB min / 4 GB recommended |
+| **Disk** | ~2 GB base + 10 GB workspace |
 | **CPU Cores** | 2+ |
-| **Java Runtime** | OpenJDK 17 (Temurin JDK 17) |
-| **Operating System** | Debian 11 (Bullseye) or Debian 12 (Bookworm) |
+| **Java Runtime** | OpenJDK 21 (Temurin JDK 21) |
+| **Operating System** | Debian 12 (Bookworm) |
 
 ---
 
 ## 📂 File Structure
 
-When installed, files are placed under:
+```
 /mnt/server/
 ├── jenkins.war
-├── logs/
-├── plugins/
-└── jobs/
+├── jenkins_home/
+├── tmp/
+└── logs/
+```
 
-
-Persistent data is stored automatically inside the container’s `/var/jenkins_home` (mapped to Pterodactyl’s `/mnt/server/`).
+Data is persisted to Pterodactyl’s mounted volume.
 
 ---
 
 ## 🛠️ Installation Script Summary
 
-The installation script:
+The installer:
 
-1. Updates apt repositories.
-2. Installs `curl`, `ca-certificates`, and `openjdk-17-jdk`.
-3. Downloads Jenkins LTS WAR from [`https://get.jenkins.io/war-stable/latest/jenkins.war`](https://get.jenkins.io/war-stable/latest/jenkins.war).
-4. Verifies checksum (optional step).
-5. Saves it to `/mnt/server/jenkins.war`.
-
-Fallback logic is included if the primary download fails (uses version 2.479.2 as backup).
+1. Updates apt sources  
+2. Installs `wget ca-certificates openjdk-21-jre-headless`  
+3. Creates `jenkins_home` and `tmp` with correct permissions  
+4. Downloads latest LTS WAR (`https://get.jenkins.io/war-stable/latest/jenkins.war`)  
+5. Falls back to `2.479.3` if mirror fails  
+6. Outputs startup instructions and port info
 
 ---
 
 ## 🧠 Startup Details
 
-The startup command ensures:
-- Jenkins listens on **all interfaces (`0.0.0.0`)**.
-- Preferences directory errors are avoided by redirecting prefs to `/tmp`:
-  ```bash
-  -Djava.util.prefs.userRoot=/tmp
+Jenkins runs via:
 
-🔒 Ports
-Port	Protocol	Purpose
-8123	TCP	Web dashboard
-50000	TCP	(Optional) Jenkins agent communication
-If you plan to connect remote agents, you’ll need to open 50000/TCP in your panel’s port allocation.
+```bash
+java -Djava.io.tmpdir=/home/container/tmp -DJENKINS_HOME=/home/container/jenkins_home -jar /home/container/jenkins.war --httpPort=${JENKINS_PORT} --httpListenAddress=0.0.0.0
+```
 
-
-📦 Environment Variables
-Variable	Default	Description
-SERVER_JARFILE	jenkins.war	File used to start Jenkins
-SERVER_PORT	8123	Port Jenkins binds to
-JAVA_OPTS	-Djava.util.prefs.userRoot=/tmp	JVM preferences fix
-JENKINS_ARGS	--httpListenAddress=0.0.0.0	Ensures access from outside
-
-
-🧰 Dependencies
-
-Required on the host node:
-
-Docker ≥ 24.x
-
-Wings ≥ 1.11.x
-
-Panel ≥ 1.11.x
-
-CPU architecture: amd64 or arm64
-
-Internet connectivity to get.jenkins.io for first-time installation
-
-🚦 Common Issues
-Symptom	Cause	Fix
-install: cannot obtain installation lock	Stuck _installer container	sudo docker rm -f $(docker ps -aq -f name=_installer) then restart Wings
-Couldn't create user preferences directory	JVM prefs issue	Already fixed by -Djava.util.prefs.userRoot=/tmp
-404 while downloading jenkins.war	Jenkins mirror redirect	The script retries using fallback URL
-Web page won’t load	Port/firewall issue	Ensure the allocated port (8123) is open to your IP and assigned in the panel
-
-🌍 Accessing Jenkins
-
-After installation and startup:
-
-Visit http://<YOUR_NODE_IP>:<ALLOCATED_PORT>
-Example: http://192.168.0.243:8123
-
-Initial setup wizard will prompt you to unlock Jenkins:
-cat /mnt/server/jenkins_home/secrets/initialAdminPassword
-
-🧩 Credits
-
-Jenkins Project
-
+This fixes all “user preferences directory” errors.
 
 ---
 
-Would you like me to include a **“Quick Install” shell section** at the top (copy-paste for end-users), e.g.  
+### 🔒 Ports
+
+| Port | Protocol | Purpose |
+|:--|:--|:--|
+| 8123 | TCP | Web dashboard |
+| 50000 | TCP | (Optional) Agent communication |
+
+---
+
+### 🌿 Environment Variables
+
+| Variable | Default | Description |
+|:--|:--|:--|
+| `JENKINS_PORT` | 8123 | Port Jenkins binds to |
+| `JAVA_OPTS` | `-Djava.io.tmpdir=/home/container/tmp` | Temp directory fix |
+| `JENKINS_HOME` | `/home/container/jenkins_home` | Persistent workspace |
+
+---
+
+## 🧰 Host Dependencies
+
+- Docker ≥ 24.x  
+- Wings ≥ 1.11.x  
+- Panel ≥ 1.11.x  
+- Architecture: amd64 / arm64  
+- Internet access to `get.jenkins.io`
+
+---
+
+## 🚦 Common Issues & Fixes
+
+| Symptom | Cause | Fix |
+|:--|:--|:--|
+| `install: cannot obtain installation lock` | Stuck installer container | `sudo docker rm -f $(docker ps -aq -f name=_installer)` then restart Wings |
+| `Couldn't create user preferences directory` | Missing /tmp | Already fixed by egg’s startup command |
+| `404 while downloading jenkins.war` | Mirror redirect | Installer uses fallback |
+| `Web page won’t load` | Port not open | Open 8123 in Pterodactyl panel |
+| `No such file /tmp` | Container permissions | Fixed automatically on startup |
+
+---
+
+## 🌍 Accessing Jenkins
+
+Visit:  
+`http://<NODE_IP>:8123`
+
+Unlock with:
 ```bash
-bash <(curl -s https://raw.githubusercontent.com/augesrob/ptero-jenkins/main/install.sh)
-````
+cat /mnt/server/jenkins_home/secrets/initialAdminPassword
+```
+
+---
+
+## 🧩 Credits
+
+- **Jenkins Project** for LTS releases  
+- **Robert Augesen (@augesrob)** for Java 21 Pterodactyl integration  
+- **Pterodactyl Community** for egg standards  
+
+---
