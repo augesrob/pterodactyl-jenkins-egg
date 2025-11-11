@@ -7,15 +7,6 @@ Maintained by **Robert Augesen (@augesrob)**.
 
 ---
 
-## ⚡ Quick Install
-
-For users who prefer a one-line installation:
-```bash
-bash <(curl -s https://raw.githubusercontent.com/augesrob/ptero-jenkins/main/install.sh)
-```
-
----
-
 ## 📦 Overview
 
 Jenkins is a self-hosted automation server for building, testing, and deploying code.  
